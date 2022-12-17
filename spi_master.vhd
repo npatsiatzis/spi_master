@@ -39,6 +39,7 @@ architecture rtl of spi_master is
 
 	signal r_addr : integer range 0 to g_slaves-1;		   		--latch i_addr when en goes high
 	signal continue : std_ulogic;      --flag to continue transaction
+	
 	--convert std_logic to integer
 	function std_ulogic_to_integer (n : std_ulogic) return integer is 
 	begin
