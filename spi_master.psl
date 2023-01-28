@@ -1,0 +1,108 @@
+library ieee;
+use ieee.numeric_std.all;
+
+vunit formal_test(spi_master(rtl)) {
+
+
+	--main tests
+	--1) use loopback between master and "slave"
+	--2) check that for every value the master sends, they receive the same value back
+	--3) check the continuous mode operation by testing two random values send in consequence
+	--4) witness cover properties to insure against vacuous sucess 
+
+	default clock is rising_edge(i_clk);
+
+	signal data_to_tx : std_ulogic_vector(g_width -1 downto 0);
+
+	--random value for i_clk_div 
+	signal clk_div : std_ulogic_vector(g_clk_div_len -1 downto 0);
+	signal random_data1 : std_ulogic_vector(g_width -1 downto 0);
+	signal random_data2: std_ulogic_vector(g_width -1 downto 0);
+	attribute anyconst : boolean;
+	attribute anyconst of clk_div : signal is true;
+	attribute anyconst of random_data1 : signal is true;
+	attribute anyconst of random_data2 : signal is true;
+
+	--random value for pol/pha
+	signal pol, pha : std_ulogic;
+	attribute anyconst of pol : signal is true;
+	attribute anyconst of pha : signal is true;
+
+	signal toggles_max : std_ulogic;
+	toggles_max <= '1' when (clk_toggles = 2*g_width+1) else '0';
+
+	process(i_clk,i_arst_n)
+	begin
+		if(i_arst_n = '0') then
+			data_to_tx <= (others => '0');
+		elsif(rising_edge(i_clk)) then
+			if(i_en = '1' and spi_state = READY) then
+				data_to_tx <= i_tx_data;
+			end if;
+			if(spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and clk_toggles = last_bit_rx and i_cont = '1') then
+				data_to_tx <= i_tx_data;
+			end if;
+		end if;
+	end process;
+	--#####################################################
+
+	-------------------
+	--ASSERT PROPERTIES
+	-------------------
+
+	check_rst: assert always {i_arst_n = '0'} |-> {o_busy = '1' : o_rx_data = std_ulogic_vector(to_unsigned(0,g_width)) : rx_buffer = std_ulogic_vector(to_unsigned(0,g_width)) : spi_state = READY};
+	ckeck_clk_toggles: assert always {clk_toggles >=0 and clk_toggles <= 2*g_width+1};
+	ckeck_last_bit_rx: assert always {last_bit_rx >=0 and last_bit_rx <= 2*g_width};
+	check_cnt: assert always {cnt>=0 and cnt<=(2**g_clk_div_len)};
+
+	check_toggles_flow: assert always {clk_toggles = 0 or clk_toggles = prev(clk_toggles) or clk_toggles = prev(clk_toggles)+1 or clk_toggles = prev(last_bit_rx) -2*prev(g_width)+1};
+	check_cnt_flow : assert always {cnt = to_integer(unsigned(i_clk_div)) or cnt = 0 or cnt = 1 or cnt = prev(cnt) or cnt = prev(cnt)+1};
+
+	check_busy_in_READY: assert always (({spi_state = READY and i_en = '0'} |=> {o_busy = '0'})abort i_arst_n = '0');
+	check_READY_to_EXECUTE: assert always (({spi_state = READY and i_en = '1'} |=> {spi_state = EXECUTE})abort i_arst_n = '0');
+	check_EXECUTE_to_READY: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and clk_toggles = 2*g_width+1 and i_cont = '0'} |=> {spi_state = READY}));
+	check_any_transition_to_READY: assert always {spi_state = READY} |-> {(prev(spi_state) = READY) or (i_arst_n = '0') or (prev(spi_state) = EXECUTE and prev(cnt) = to_integer(unsigned(i_clk_div)) and prev(clk_toggles) = 2*g_width+1)};
+	
+
+	check_o_ss_READY: assert always {spi_state = READY} |-> {unsigned(o_ss_n) = 2**g_slaves-1};
+	check_o_ss_EXECUTE: assert always (({spi_state = EXECUTE and prev(spi_state) = EXECUTE} |-> {unsigned(o_ss_n) /= 2**g_slaves-1})abort i_arst_n = '0');
+	
+	check_tx_rx: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and clk_toggles = 2*g_width+1 and i_cont = '0' } |=> {o_rx_data = data_to_tx})abort i_arst_n = '0');
+	check_cont: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and continue = '1' and data_to_tx = random_data2 and prev(data_to_tx,2) = random_data1} |-> (next_event(toggles_max)(o_rx_data = random_data2))!)abort i_arst_n = '0');
+	--#####################################################
+
+	-------------------
+	--ASSUME PROPERTIES
+	-------------------
+	assume {unsigned(o_rx_data) =0};
+	assume always {i_pol = pol};
+	assume always {i_pha = pha};
+
+
+	assume {i_arst_n = '0'};
+	
+	--couple miso and mosi, since the communication line is full duplex
+	assume always {i_miso = prev(o_mosi)};
+	assume always {r_addr = 0};
+
+	assume always {i_clk_div = clk_div};
+	assume always {unsigned(clk_div) >=1};
+
+	assume always {random_data1 /= random_data2};
+	assume always {unsigned(random_data1) /= 0};
+
+	--#####################################################
+
+	-------------------
+	--COVER PROPERTIES
+	-------------------
+
+	cover_mosi_Z: cover {o_mosi = 'Z'};
+	cover_max_toggles: cover {clk_toggles = 2*g_width+1};
+	cover_max_last_bit: cover {last_bit_rx = 2*g_width};
+	cover_max_cnt: cover {cnt = unsigned(i_clk_div)};
+
+	--witness covers to make sure we dont succumb to vacuous sucess of our functional assertions
+	cover_tx_rx: cover {spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and clk_toggles = 2*g_width+1 and i_cont = '0' ; o_rx_data = random_data1};
+	cover_cont: cover {(spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and  continue = '1' and data_to_tx = random_data2 and prev(data_to_tx,2) = random_data1); i_arst_n = '1'[*]; i_arst_n='1' and  clk_toggles = 2*g_width+1; o_rx_data = random_data2};
+}
