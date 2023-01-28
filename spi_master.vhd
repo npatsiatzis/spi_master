@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity spi_master is
 	generic(
 		g_sys_clk : natural := 50_000_000;		--system clock frequency in Hz
-		g_clk_div_len : natural :=4;			--length of the clock divide input
+		g_clk_div_len : natural :=2;			--length of the clock divide input
 		g_width : natural :=8;					--width of the word to transmit
 		g_slaves : natural :=4);				--bit size for the ss_n input
 	port(
@@ -28,14 +28,15 @@ end spi_master;
 
 architecture rtl of spi_master is
 	type spi_master_state is (READY,EXECUTE);
-	signal spi_state : spi_master_state;
+	signal spi_state : spi_master_state := READY;
 
 	signal cnt : integer range 0 to 2**g_clk_div_len :=0;		--counter for clk_div
+	signal w_clk_div : std_ulogic_vector(g_clk_div_len -1 downto 0);
 	signal tx_rx : std_ulogic;									--spi clock edge tx/rx indicator
-	signal tx_buffer : std_ulogic_vector(g_width -1 downto 0);	--buffer holding mosi data
-	signal rx_buffer : std_ulogic_vector(g_width -1 downto 0);	--buffer holding miso data
-	signal clk_toggles : integer range 0 to 2*g_width + 1;	
-	signal last_bit_rx : integer range 0 to 2*g_width;			--clk_toggle value for last rx bit
+	signal tx_buffer : std_ulogic_vector(g_width -1 downto 0) :=(others => '0');	--buffer holding mosi data
+	signal rx_buffer : std_ulogic_vector(g_width -1 downto 0) :=(others => '0');	--buffer holding miso data
+	signal clk_toggles : integer range 0 to 2*g_width + 1 :=0;	
+	signal last_bit_rx : integer range 0 to 2*g_width :=0;			--clk_toggle value for last rx bit
 
 	signal r_addr : integer range 0 to g_slaves-1;		   		--latch i_addr when en goes high
 	signal continue : std_ulogic;      --flag to continue transaction
@@ -51,6 +52,8 @@ architecture rtl of spi_master is
 	end std_ulogic_to_integer;
 begin
 
+	w_clk_div <= std_ulogic_vector(to_unsigned(1,g_clk_div_len)) when (unsigned(i_clk_div) = 0) else i_clk_div;
+
 	--spi master FSM
 	spi_FSM : process(i_clk,i_arst_n)
 	begin
@@ -61,6 +64,8 @@ begin
 			o_ss_n <= (others => '1');		--set ss high for all slaves
 			o_mosi <= 'Z';					--set mosi at high impedance
 			spi_state <= READY;				--set state to READY
+			tx_buffer <= (others => '0');
+			rx_buffer <= (others => '0');
 		elsif (rising_edge(i_clk)) then
 			case spi_state is 
 				when READY =>
@@ -74,7 +79,7 @@ begin
 						r_addr <= i_addr;							--latch the address of the slave
 
 						spi_state <= EXECUTE;						--set state to EXECUTE
-						cnt <= to_integer(unsigned(i_clk_div));		--set cnt to clk_div to transition next
+						cnt <= to_integer(unsigned(w_clk_div));		--set cnt to clk_div to transition next
 						tx_rx <= not i_pha;							--set tx/rx indicator at no clock phase
 						tx_buffer <= i_tx_data;						--latch data to transmit
 						clk_toggles <= 0;							--set clock toggle of cur. transaction to low
@@ -86,8 +91,8 @@ begin
 				when EXECUTE =>												
 					o_busy <= '1';
 					o_ss_n(r_addr) <= '0';							--set to low the slave based on addr
-					if(cnt = to_integer(unsigned(i_clk_div))) then  --if cnt reached new sclk edge
-						cnt <= 1;									--re-initialize cnt
+					if(cnt >= to_integer(unsigned(w_clk_div))) then  --if cnt reached new sclk edge ###!!!!#####@@@@@@@ (= -> >=)
+						cnt <= 0;									--re-initialize cnt
 						tx_rx <= not tx_rx;							--toggle between rx/tx
 
 						if(clk_toggles = 2*g_width + 1) then		--if sclk reached max toggles for transaction
@@ -115,13 +120,13 @@ begin
 							clk_toggles <= last_bit_rx - 2*g_width +1;			--reset clk toggles
 						end if;
 
-						if( continue = '1')	then								--if continue after transaction
+						if(continue = '1')	then								--if continue after transaction
 							o_busy <= '0';										--set busy / ready to low
 							o_rx_data <= rx_buffer;								--set continue to low
 							continue <= '0';
 						end if;
 
-						if(clk_toggles = 2*g_width+1 and i_cont = '0') then		--if transaction over and not cont. mode
+						if(clk_toggles = 2*g_width+1) then		--if transaction over and not cont. mode
 							o_busy <= '0';										--set busy low
 							o_rx_data <= rx_buffer;								--send receive data to rx output port
 							o_ss_n <= (others => '1');							--deselect slave 
@@ -130,8 +135,8 @@ begin
 						else
 							spi_state <= EXECUTE;
 						end if;
-					else 
-						cnt <= cnt + 1;
+					else
+ 						cnt <= cnt + 1;
 						spi_state <= EXECUTE;
 					end if;
 			end case;

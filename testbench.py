@@ -23,7 +23,7 @@ class crv_inputs(crv.Randomized):
 		self.add_rand("data",list(range(2**g_width)))
 		self.add_rand("pol",list(range(0,2)))
 		self.add_rand("pha",list(range(0,2)))
-		self.add_rand("clk_div",list(range(2,2**g_clk_div_len)))
+		self.add_rand("clk_div",list(range(0,2**g_clk_div_len)))
 
 
 covered_value = []
@@ -37,7 +37,7 @@ def notify_full():
 # at_least = value is superfluous, just shows how you can determine the amount of times that
 # a bin must be hit to considered covered
 @CoverPoint("top.o_rx_data",xf = lambda x : x.o_rx_data.value, bins = list(range(2**g_width)), at_least=1)
-@CoverPoint("top.i_clk_div",xf = lambda x : x.i_clk_div.value,bins = list(range(2,2**g_clk_div_len)),at_least=1)
+@CoverPoint("top.i_clk_div",xf = lambda x : x.i_clk_div.value,bins = list(range(1,2**g_clk_div_len)),at_least=1)
 @CoverPoint("top.i_pol",xf = lambda x : x.i_pol.value == 1,bins = list(range(2**10)),at_least=1)
 @CoverPoint("top.i_pha",xf = lambda x : x.i_pha.value == 1,bins = [True,False],at_least=1)
 @CoverCross("top.data_X_clk_div", items = ["top.o_rx_data","top.i_clk_div"], at_least=1)
@@ -51,7 +51,7 @@ async def reset(dut,cycles=1):
 	dut.i_tx_data.value = 0
 	dut.i_cont.value = 0
 	dut.i_addr.value = 0
-	dut.i_clk_div.value = 2 
+	dut.i_clk_div.value = 1 
 	dut.i_pol.value = 0
 	dut.i_pha.value = 0
 	dut.i_miso.value = 0
@@ -77,6 +77,9 @@ async def test(dut):
 
 
 	dut.i_tx_data.value = inputs.data
+	dut.i_pol.value = inputs.pol
+	dut.i_pha.value = inputs.pha
+	dut.i_clk_div.value = inputs.clk_div
 
 	expected_value = inputs.data
 	dut.i_en.value = 1
@@ -99,6 +102,14 @@ async def test(dut):
 				while(data in covered_value):					
 					inputs.randomize()
 					data = inputs.data
+				
 				dut.i_tx_data.value = data
+				dut.i_pol.value = inputs.pol
+				dut.i_pha.value = inputs.pha
+				dut.i_clk_div.value = inputs.clk_div
 				expected_value = data
+
+
+	coverage_db.report_coverage(cocotb.log.info,bins=True)
+	coverage_db.export_to_xml(filename="coverage.xml") 
 		
