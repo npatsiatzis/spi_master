@@ -68,7 +68,7 @@ vunit formal_test(spi_master(rtl)) {
 	check_o_ss_EXECUTE: assert always (({spi_state = EXECUTE and prev(spi_state) = EXECUTE} |-> {unsigned(o_ss_n) /= 2**g_slaves-1})abort i_arst_n = '0');
 	
 	check_tx_rx: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and clk_toggles = 2*g_width+1 and i_cont = '0' } |=> {o_rx_data = data_to_tx})abort i_arst_n = '0');
-	check_cont: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and continue = '1' and data_to_tx = random_data2 and prev(data_to_tx,2) = random_data1} |-> (next_event(toggles_max)(o_rx_data = random_data2))!)abort i_arst_n = '0');
+	check_cont: assert always (({spi_state = EXECUTE and cnt = to_integer(unsigned(i_clk_div)) and continue = '1' and data_to_tx = random_data2 and prev(data_to_tx,2) = random_data1} |-> (next_event(spi_state = READY and prev(clk_toggles)= 2*g_width+1)(o_rx_data = random_data2))!)abort i_arst_n = '0');
 	--#####################################################
 
 	-------------------

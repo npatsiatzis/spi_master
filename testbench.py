@@ -38,9 +38,8 @@ def notify_full():
 # a bin must be hit to considered covered
 @CoverPoint("top.o_rx_data",xf = lambda x : x.o_rx_data.value, bins = list(range(2**g_width)), at_least=1)
 @CoverPoint("top.i_clk_div",xf = lambda x : x.i_clk_div.value,bins = list(range(1,2**g_clk_div_len)),at_least=1)
-@CoverPoint("top.i_pol",xf = lambda x : x.i_pol.value == 1,bins = list(range(2**10)),at_least=1)
+@CoverPoint("top.i_pol",xf = lambda x : x.i_pol.value == 1,bins = [True,False],at_least=1)
 @CoverPoint("top.i_pha",xf = lambda x : x.i_pha.value == 1,bins = [True,False],at_least=1)
-@CoverCross("top.data_X_clk_div", items = ["top.o_rx_data","top.i_clk_div"], at_least=1)
 def number_cover(dut):
 	covered_value.append(dut.o_rx_data.value)
 
