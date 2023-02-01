@@ -40,6 +40,9 @@ architecture rtl of spi_master is
 
 	signal r_addr : integer range 0 to g_slaves-1;		   		--latch i_addr when en goes high
 	signal continue : std_ulogic;      --flag to continue transaction
+
+	--Used solely for Verification purposes. Do not  keep during synthesis
+	signal f_execute_ready : std_ulogic;
 	
 	--convert std_logic to integer
 	function std_ulogic_to_integer (n : std_ulogic) return integer is 
@@ -145,4 +148,7 @@ begin
 			end case;
 		end if;
 	end process; -- spi_FSM
+
+	--Used solely for Verification purposes. Do not  keep during synthesis
+	f_execute_ready <= '1' when(clk_toggles = 2*g_width+1 and cnt = to_integer(unsigned(w_clk_div))) else '0';
 end rtl;
