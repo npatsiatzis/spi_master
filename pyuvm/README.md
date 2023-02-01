@@ -1,8 +1,8 @@
 ![example workflow](https://github.com/npatsiatzis/spi_master/actions/workflows/regression_pyuvm.yml/badge.svg)
 ![example workflow](https://github.com/npatsiatzis/spi_master/actions/workflows/coverage_pyuvm.yml/badge.svg)
 
-## spi-master RTL implementation
-## testbench based on pyuvm with the help of cocotb
+### spi-master RTL implementation
+### testbench based on pyuvm with the help of cocotb
 
 
 - run pyuvm testbench
