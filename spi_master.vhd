@@ -22,8 +22,8 @@ entity spi_master is
 		o_mosi : out std_ulogic;									-- master out slave in
 		o_busy : out std_ulogic;									--busy / data ready
 		o_rx_data : out std_ulogic_vector(g_width -1 downto 0);		--data received from spi slave
-		o_ss_n : out std_ulogic_vector(g_slaves -1 downto 0);		--spi clock
-		o_sclk : out std_ulogic);
+		o_ss_n : out std_ulogic_vector(g_slaves -1 downto 0);		--chip(slave) select
+		o_sclk : out std_ulogic);									--spi clock
 end spi_master;
 
 architecture rtl of spi_master is
