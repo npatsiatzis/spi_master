@@ -1,4 +1,4 @@
-name: Functional Coverage
+name: Regression Test
 on: [push]
 jobs:
   run_tests:
