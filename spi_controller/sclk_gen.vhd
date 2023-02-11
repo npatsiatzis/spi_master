@@ -10,9 +10,9 @@ entity sclk_gen is
 			i_arstn : in std_ulogic;
 			i_dv : in std_ulogic;		--input bus data valid
 			i_sclk_cycles : in std_ulogic_vector(7 downto 0);
-			i_setup : in std_ulogic_vector(7 downto 0);
-			i_hold : in std_ulogic_vector(7 downto 0);
-			i_tx2tx : in std_ulogic_vector(7 downto 0);
+			i_leading_cycles : in std_ulogic_vector(7 downto 0);
+			i_tailing_cycles : in std_ulogic_vector(7 downto 0);
+			i_iddling_cycles : in std_ulogic_vector(7 downto 0);
 			i_pol : in std_ulogic;
 			o_ss_n : out std_ulogic;
 			o_sclk : out std_ulogic);
@@ -24,16 +24,16 @@ architecture rtl of sclk_gen is
 	signal w_sclk_pulse : std_ulogic;
 	signal w_sclk_pulse_r : std_ulogic;
 
-	type  t_state is (IDLE,SETUP,DATA_TX,HOLD,TX2TX);
+	type  t_state is (IDLE,LEADING_DELAY,DATA_TX,TALINING_DELAY,IDDLING_DELAY);
 	signal w_state : t_state; 
 
 	signal w_sclk_start : std_ulogic; 
 	signal w_cnt_delay_start : std_ulogic;
 	signal w_cnt_falling_edges : std_ulogic;
 	signal w_cnt_delay : unsigned(7 downto 0);
-	signal w_setup_done : std_ulogic;
-	signal w_hold_done : std_ulogic;
-	signal w_tx2tx_done : std_ulogic;
+	signal w_leading_done : std_ulogic;
+	signal w_tailing_done : std_ulogic;
+	signal w_iddling_done : std_ulogic;
 
 	signal w_sclk_falling_edges : unsigned(7 downto 0);
 	signal w_sclk_falling_edge : std_ulogic;
@@ -111,32 +111,42 @@ begin
 			case w_state is 
 				when IDLE =>
 					if(i_dv = '1') then
-						w_state <= SETUP;
+						w_state <= LEADING_DELAY;
 						w_cnt_delay_start <= '1';
 						o_ss_n <= '0';
 					end if;
-				when SETUP =>
-						if(w_setup_done = '1') then
+				--state for the timeframe after ss_n asserts until 1st sck edge
+				--leave leading state when leading time expires
+				when LEADING_DELAY =>
+						if(w_leading_done = '1') then
 							w_state <= DATA_TX;
 							w_sclk_start <= '1';
 							w_cnt_delay_start <= '0';
 							w_cnt_falling_edges <= '1';
 						end if;
-				when DATA_TX =>
+				--this state is the transfer state for both tx and rx
+				when DATA_TX =>	
+					--the transfer time (tx or rx) is always until 16 sck edges
+					--with the last always being the 8th falling sck eddge	
 					if(w_sclk_falling_edges = g_data_width) then
-						w_state <= HOLD;
+						w_state <= TALINING_DELAY;
 						w_cnt_delay_start <= '1';
 						w_cnt_falling_edges <= '0';
 					end if;
-				when HOLD =>
-					if(w_hold_done = '1') then
-						w_state <= TX2TX;
+				--state for the timeframe after the 8th sck falling edge untill ss_n deasserts
+				--leave trailing state when trailing time expires
+				when TALINING_DELAY =>
+					if(w_tailing_done = '1') then
+						w_state <= IDDLING_DELAY;
 						w_sclk_start <= '0';
 						w_cnt_delay_start <= '0';
 						o_ss_n <= '1';
 					end if;
-			 	when TX2TX =>
-			 		if(w_tx2tx_done = '1') then
+				--state for the timeframe for which ss_n is deasserted (high) after a transaction
+				--until a new transaction can be accepted
+				--leave this state when iddling time expires
+			 	when IDDLING_DELAY =>
+			 		if(w_iddling_done = '1') then
 			 			w_state <= IDLE;
 			 			w_cnt_delay_start <= '0';
 			 		else
@@ -152,7 +162,7 @@ begin
 		end if;
 	end process; -- mange_sclk
 
-	--count and indicate when setup,hold,tx2tx time has expired
+	--count and indicate when leading,trailing,iddling time has expired
 
 	cnt_delays : process(i_clk,i_arstn) is
 	begin
@@ -167,9 +177,12 @@ begin
 		end if;
 	end process; -- cnt_delays
 
-	w_setup_done <= '1' when w_cnt_delay = unsigned(i_setup) else '0';
-	w_hold_done <= '1' when w_cnt_delay = unsigned(i_hold) else '0';
-	w_tx2tx_done <= '1' when w_cnt_delay = unsigned(i_tx2tx) else '0';
+	--Leading cycles : time after ss_n asserts (goes low) until the first sck edge
+	w_leading_done <= '1' when w_cnt_delay = unsigned(i_leading_cycles) else '0';
+	--trailing cycles : time after the last sck edge until ss_n asserts (goes low)
+	w_tailing_done <= '1' when w_cnt_delay = unsigned(i_tailing_cycles) else '0';
+	--iddling cycles : time between transfers, min time that ss_n can be deasserted (high)
+	w_iddling_done <= '1' when w_cnt_delay = unsigned(i_iddling_cycles) else '0';
 
 	cnt_falling_edges : process(i_clk,i_arstn) is
 	begin

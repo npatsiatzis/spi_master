@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 entity spi_logic is
 	generic (
-	 	g_data_width : natural :=8); 
+	 	g_data_width : natural :=8;
+	 	g_use_fifo : natural :=1); 
 	port (
 			i_clk : in std_ulogic;
 			i_arstn : in std_ulogic;
@@ -31,7 +32,7 @@ architecture rtl of spi_logic is
 	signal w_rx_data : std_ulogic_vector(g_data_width -1 downto 0);
 	signal w_sr_rx_pos_sclk : std_ulogic_vector(g_data_width -1 downto 0);
 	signal w_sr_rx_neg_sclk : std_ulogic_vector(g_data_width -1 downto 0);
-
+	signal w_rx_fifo_data_in : std_ulogic_vector(15 downto 0);
 	signal w_tx_data : std_ulogic_vector(g_data_width -1 downto 0);
 
 	signal w_cnt_rx_pos : unsigned(4 downto 0);
@@ -40,7 +41,7 @@ architecture rtl of spi_logic is
 	signal w_rx_done_neg : std_ulogic;
 
 	signal w_rx_done, w_rx_done_r, w_rx_done_rr : std_ulogic;
-	signal w_rx_rdy : std_ulogic;
+	signal w_rx_rdy, w_rx_rdy_r, w_rx_rdy_rr: std_ulogic;
 
 	signal w_mosi_pos_01, w_mosi_pos_10 : std_ulogic;
 	signal w_mosi_neg_00, w_mosi_neg_11 : std_ulogic;
@@ -52,18 +53,126 @@ architecture rtl of spi_logic is
 	signal w_tx_done, w_tx_done_r, w_tx_done_rr : std_ulogic;
 	signal w_tx_rdy : std_ulogic;
 
-begin
+	signal w_tx_rdy_valid, w_tx_rdy_valid_r : std_ulogic;
 
-	o_data_proc : process(all) is
+	signal w_rx_fifo_wr,w_rx_fifo_rd : std_ulogic;
+	signal w_rx_fifo_full,w_rx_fifo_empty,w_rx_fifo_overflow,w_rx_fifo_underflow : std_ulogic;
+	
+	signal w_tx_fifo_wr,w_tx_fifo_rd : std_ulogic;
+	signal w_tx_fifo_full,w_tx_fifo_empty,w_tx_fifo_overflow,w_tx_fifo_underflow : std_ulogic;
+	signal w_fifo_tx_data : std_ulogic_vector(15 downto 0);
+begin
+	w_rx_fifo_data_in <= w_rx_data when(g_data_width = 16) else "00000000" & w_rx_data;
+	if_use_fifo : if g_use_fifo = 1 generate
+		synchronous_fifo_rx : entity work.synchronous_fifo(arch)
+		generic map(
+				g_width => 16,
+				g_depth =>4)
+		port map(
+				i_clk_wr =>i_clk,
+				i_rst_wr =>i_arstn,
+				i_data =>w_rx_fifo_data_in,
+				i_wr =>w_rx_fifo_wr,
+
+				i_clk_rd =>i_clk,
+				i_rst_rd =>i_arstn,
+				i_rd =>w_rx_fifo_rd,
+
+				o_data =>o_data,
+				o_overflow =>w_rx_fifo_overflow,
+				o_underflow =>w_rx_fifo_underflow,
+				o_full =>w_rx_fifo_full,
+				o_empty => w_rx_fifo_empty);
+
+		synchronous_fifo_tx : entity work.synchronous_fifo(arch)
+		generic map(
+				g_width => 16,
+				g_depth =>4)
+		port map(
+				i_clk_wr =>i_clk,
+				i_rst_wr =>i_arstn,
+				i_data =>i_data,
+				i_wr =>w_tx_fifo_wr,
+
+				i_clk_rd =>i_clk,
+				i_rst_rd =>i_arstn,
+				i_rd =>w_tx_fifo_rd,
+
+				o_data =>w_fifo_tx_data,
+				o_overflow =>w_tx_fifo_overflow,
+				o_underflow =>w_tx_fifo_underflow,
+				o_full =>w_tx_fifo_full,
+				o_empty =>w_tx_fifo_empty);
+	end generate if_use_fifo;
+
+	--generate tge tx and rx fifo's wr/rd enable signals
+
+	gen_tx_wr_en : process(i_clk,i_arstn) is
 	begin
-		if(g_data_width = 8) then
-			o_data(15 downto 8) <= (others => '0');
-			o_data(7 downto 0) <= w_rx_data;
-			
-		elsif (g_data_width = 16) then
-			o_data <= w_rx_data;
+		if(i_arstn = '0') then
+			w_tx_fifo_wr <= '0';
+		elsif(rising_edge(i_clk)) then
+			if(g_use_fifo = 1) then
+				if(i_wr = '1' and i_ss_n = '0') then
+					w_tx_fifo_wr <= '1';
+				else
+					w_tx_fifo_wr <= '0';
+				end if;
+			end if;
 		end if;
-	end process; -- o_data_proc
+	end process; -- gen_tx_wr_en
+
+	gen_tx_rd_en : process(i_clk,i_arstn) is
+	begin
+		if(i_arstn = '0') then
+			w_tx_rdy_valid <= '0';
+			w_tx_rdy_valid_r <= '0';
+		elsif(rising_edge(i_clk)) then
+			w_tx_rdy_valid <= w_tx_rdy and i_dv;
+			w_tx_rdy_valid_r <= w_tx_rdy_valid;
+		end if;
+	end process; -- gen_tx_rd_en
+
+	w_tx_fifo_rd <= w_tx_rdy_valid and not(w_tx_rdy_valid_r);
+
+	gen_rx_wr_en : process(i_clk,i_arstn) is
+	begin
+		if(i_arstn = '0') then
+			w_rx_rdy_r <= '0';
+			w_rx_rdy_rr <= '0';
+		elsif(rising_edge(i_clk)) then
+			w_rx_rdy_r <= w_rx_rdy;
+			w_rx_rdy_rr <= w_rx_rdy_r;
+		end if;
+	end process; -- gen_rx_wr_en
+
+	w_rx_fifo_wr <= w_rx_rdy_r and not(w_rx_rdy_rr);
+
+	gen_rx_rd_en : process(i_clk,i_arstn) is
+	begin
+		if(i_arstn = '0') then
+			w_rx_fifo_rd <= '0';
+		elsif (rising_edge(i_clk)) then
+			if(g_use_fifo = 1) then
+				if(i_rd ='1' and i_ss_n = '0') then
+					w_rx_fifo_rd <= '1';
+				end if;
+			end if;
+		end if;
+	end process; -- gen_rx_rd_en
+
+	o_data_not_fifo : if g_use_fifo = 0 generate
+		o_data_proc : process(all) is
+		begin
+			if(g_data_width = 8) then
+				o_data(15 downto 8) <= (others => '0');
+				o_data(7 downto 0) <= w_rx_data;
+				
+			elsif (g_data_width = 16) then
+				o_data <= w_rx_data;
+			end if;
+		end process; -- o_data_proc
+	end generate o_data_not_fifo;
 
 	latch_data_to_tx : process(i_clk,i_arstn) is
 	begin
@@ -106,7 +215,15 @@ begin
 		if(i_arstn = '0') then
 			w_tx_data <= (others => '0');
 		elsif (rising_edge(i_clk)) then
-			w_tx_data <= w_data_to_tx;
+			if(g_use_fifo = 1) then
+				if(g_data_width = 8) then
+					w_tx_data <= w_fifo_tx_data(7 downto 0);
+				else
+					w_tx_data <=  w_fifo_tx_data;
+				end if;
+			else
+				w_tx_data <= w_data_to_tx;
+			end if;
 		end if;
 	end process; -- tx_data_reg
 
@@ -219,7 +336,6 @@ begin
 			end if;
 		end if;
 	end process; -- rx_rdy
-
 
 	--Transmiter End. Group that drives the serial line at the posedge of the serial clock
 

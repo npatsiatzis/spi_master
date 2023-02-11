@@ -4,7 +4,8 @@ use ieee.std_logic_1164.all;
 
 entity spi_top is 
 	generic (
-			g_data_width : natural :=8);
+			g_data_width : natural :=8;
+			g_use_fifo : natural :=1);
 	port (
 			i_clk : in std_ulogic;
 			i_arstn : in std_ulogic;
@@ -18,9 +19,9 @@ entity spi_top is
 			i_dv : in std_ulogic;
 			i_slave_address : in std_ulogic_vector(1 downto 0);
 			i_sclk_cycles : in std_ulogic_vector(7 downto 0);
-			i_setup_cycles : in std_ulogic_vector(7 downto 0);
-			i_hold_cycles : in std_ulogic_vector(7 downto 0);
-			i_tx2tx_cycles : in std_ulogic_vector(7 downto 0);
+			i_leading_cycles : in std_ulogic_vector(7 downto 0);
+			i_tailing_cycles : in std_ulogic_vector(7 downto 0);
+			i_iddling_cycles : in std_ulogic_vector(7 downto 0);
 			i_data : in std_ulogic_vector(15 downto 0);
 			o_data : out std_ulogic_vector(15 downto 0);
 			o_tx_ready : out std_ulogic;
@@ -77,16 +78,17 @@ begin
 		i_arstn =>i_arstn,
 		i_dv => i_dv,
 		i_sclk_cycles =>i_sclk_cycles,
-		i_setup =>i_setup_cycles,
-		i_hold =>i_hold_cycles,
-		i_tx2tx =>i_tx2tx_cycles,
+		i_leading_cycles =>i_leading_cycles,
+		i_tailing_cycles =>i_tailing_cycles,
+		i_iddling_cycles =>i_iddling_cycles,
 		i_pol =>i_pol,
 		o_ss_n =>w_ss_n,
 		o_sclk =>w_sclk);
 
 	spi_logic : entity work.spi_logic(rtl)
 	generic map(
-		g_data_width => g_data_width)
+		g_data_width => g_data_width,
+		g_use_fifo => 1)
 	port map(
 		i_clk =>i_clk,
 		i_arstn =>i_arstn,
