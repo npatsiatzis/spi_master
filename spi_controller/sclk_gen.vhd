@@ -92,6 +92,8 @@ begin
 				else
 					o_sclk <= w_sclk_pulse;
 				end if;
+			else
+				o_sclk <= i_pol;
 			end if;
 		end if;
 	end process; -- build_sclk
