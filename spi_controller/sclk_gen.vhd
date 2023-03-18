@@ -135,7 +135,7 @@ begin
 						w_cnt_delay_start <= '1';
 						w_cnt_falling_edges <= '0';
 					end if;
-				--state for the timeframe after the 8th sck falling edge untill ss_n deasserts
+				--state for the timeframe after the 8th sck falling edge until ss_n deasserts
 				--leave trailing state when trailing time expires
 				when TALINING_DELAY =>
 					if(w_tailing_done = '1') then
