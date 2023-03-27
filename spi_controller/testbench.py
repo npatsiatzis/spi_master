@@ -8,7 +8,6 @@ from cocotb_coverage.coverage import CoverPoint,coverage_db
 
 covered_valued = []
 
-g_use_fifo = int(cocotb.top.g_use_fifo)
 g_word_width = int(cocotb.top.g_data_width)
 
 full = False
@@ -30,8 +29,8 @@ async def reset(dut,cycles=1):
 	dut.i_pol.value = 0
 	dut.i_pha.value = 0
 	dut.i_lsb_first.value = 0
-	dut.i_dv.value = 0
-	dut.i_slave_address.value = 0
+	# dut.i_dv.value = 0
+	# dut.i_slave_address.value = 0
 	dut.i_sclk_cycles.value = 20
 	dut.i_leading_cycles.value = 4
 	dut.i_tailing_cycles.value = 4
@@ -62,8 +61,6 @@ async def test(dut):
 	expected_value = 0
 	rx_data = 0
 
-	# await RisingEdge(dut.i_clk)
-
 	while(full != True):
 		data = random.randint(0,2**g_word_width-1)
 		while(data in covered_valued):
@@ -71,23 +68,17 @@ async def test(dut):
 		expected_value = data
 
 		dut.i_wr.value = 0
-		dut.i_dv.value = 1
-		dut.i_data.value = data
 
 		await RisingEdge(dut.i_clk)
+		dut.i_data.value = data
 		dut.i_wr.value = 1
 		await RisingEdge(dut.i_clk)
-		dut.i_wr.value = 0
+		await FallingEdge(dut.o_ss_n)
 		await RisingEdge(dut.i_clk)
+		dut.i_wr.value = 0
+		await RisingEdge(dut.o_rx_ready)
 
-		await FallingEdge(dut.o_tx_ready)
-
-		if(g_use_fifo == 1):
-			# if we use the fifo, on account of the loopback test (i.e no read command)
-			# check the internal data register, i.e the one that is writen on the fifo
-			assert not (expected_value != int(dut.spi_logic.w_rx_data.value)),"Different expected to actual read data"
-		else:
-			assert not (expected_value != int(dut.o_data.value)),"Different expected to actual read data"
+		assert not (expected_value != int(dut.o_data.value)),"Different expected to actual read data"
 		coverage_db["top.i_data"].add_threshold_callback(notify, 100)
 		number_cover(dut)
 

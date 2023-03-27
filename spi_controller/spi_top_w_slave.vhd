@@ -4,8 +4,7 @@ use ieee.std_logic_1164.all;
 
 entity spi_top_w_slave is 
 	generic (
-		g_data_width : natural :=8;
-		g_use_fifo : natural :=0);
+		g_data_width : natural :=8);
 	port (
 		i_clk : in std_ulogic;
 		i_arstn : in std_ulogic;
@@ -16,7 +15,7 @@ entity spi_top_w_slave is
 		i_pha : in std_ulogic;
 		i_lsb_first : in std_ulogic;
 		i_rd : in std_ulogic;
-		i_dv : in std_ulogic;
+		--i_dv : in std_ulogic;
 		i_sclk_cycles : in std_ulogic_vector(7 downto 0);
 		i_leading_cycles : in std_ulogic_vector(7 downto 0);
 		i_tailing_cycles : in std_ulogic_vector(7 downto 0);
@@ -36,6 +35,7 @@ end spi_top_w_slave;
 architecture rtl of spi_top_w_slave is
 	signal w_sclk : std_ulogic;
 	signal w_ss_n : std_ulogic;
+	signal w_dv : std_ulogic;
 	
 	signal w_miso : std_ulogic;
 	signal w_data_slave : std_ulogic_vector(15 downto 0);
@@ -45,6 +45,7 @@ begin
 
 	o_sclk <= w_sclk;
 	o_ss_n <= w_ss_n;
+	w_dv <= i_wr or i_rd;
 
 	sclk_gen : entity work.sclk_gen(rtl)
 	generic map(
@@ -52,7 +53,7 @@ begin
 	port map(
 		i_clk =>i_clk,
 		i_arstn =>i_arstn,
-		i_dv => i_dv,
+		i_dv => w_dv,
 		i_sclk_cycles =>i_sclk_cycles,
 		i_leading_cycles =>i_leading_cycles,
 		i_tailing_cycles =>i_tailing_cycles,
@@ -63,8 +64,7 @@ begin
 
 	spi_logic : entity work.spi_logic(rtl)
 	generic map(
-		g_data_width => g_data_width,
-		g_use_fifo => g_use_fifo)
+		g_data_width => g_data_width)
 	port map(
 		i_clk =>i_clk,
 		i_arstn =>i_arstn,
@@ -74,7 +74,7 @@ begin
 		i_data =>i_data,
 		i_wr =>i_wr,
 		i_rd =>i_rd,
-		i_dv =>i_dv,
+		i_dv =>w_dv,
 		o_data =>o_data,
 		o_tx_rdy => o_tx_ready,
 		o_rx_rdy => o_rx_ready,

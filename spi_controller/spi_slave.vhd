@@ -1,3 +1,12 @@
+--Trivial spi slave model. Consists of a system (host) interface and a 
+--spi interface. This slave model does not implement any processing (adc) or 
+--memory (flash) functionality. Instead it relies on the host interface to communicate
+--to slave the data it should transfer to the spi-master (same data sent from master to slave, loopback),
+--as well as the configuration information pol,pha etc...
+--This module extends the capabilities of testing a spi-master, for the simple loopback test
+--implementating by cross-couplings the miso/mosi pins of the spi-master in the testbench.
+--Moreover, it can be expanded to act as a memory or any other kind of spi-supporting device.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -14,8 +23,6 @@ entity spi_slave is
 			i_lsb_first : in std_ulogic;
 			i_data : in std_ulogic_vector(15 downto 0);
 			i_wr : in std_ulogic;
-			--i_rd : in std_ulogic;
-			--i_dv : in std_ulogic;
 			o_data : out std_ulogic_vector(15 downto 0);
 			o_tx_rdy : out std_ulogic;
 			o_rx_rdy : out std_ulogic;
