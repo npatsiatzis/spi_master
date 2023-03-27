@@ -14,7 +14,7 @@ rtl_dir = tests_dir                                    #path to hdl folder where
       
 #run tests with generic values for length
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
-def test_uart(g_data_width):
+def test_spi(g_data_width):
 
     module = "testbench_w_slave"
     toplevel = "spi_top_w_slave"   
