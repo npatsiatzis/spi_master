@@ -15,9 +15,9 @@ VHDL_SOURCES += $(PWD)/spi_top_w_slave.vhd
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 # MODULE is the basename of the Python test file
-# test_w_slave:
-# 		rm -rf sim_build
-# 		$(MAKE) sim MODULE=testbench_w_slave TOPLEVEL=spi_top_w_slave	
+test_w_slave:
+		rm -rf sim_build
+		$(MAKE) sim MODULE=testbench_w_slave_pyuvm TOPLEVEL=spi_top_w_slave	
 
 test:
 		rm -rf sim_build

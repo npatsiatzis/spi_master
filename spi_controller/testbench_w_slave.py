@@ -68,7 +68,7 @@ async def test(dut):
 		await FallingEdge(dut.o_ss_n)
 		await RisingEdge(dut.i_clk)
 		dut.i_wr.value = 0
-		await RisingEdge(dut.w_tx_ready_slave)
+		await RisingEdge(dut.o_rx_ready)
 
 		assert not (expected_value != int(dut.o_data.value)),"Different expected to actual data on Master RX"
 		assert not (expected_value != int(dut.w_data_slave.value)),"Different expected to actual data on Slave RX"
