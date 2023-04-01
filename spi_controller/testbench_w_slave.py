@@ -25,7 +25,7 @@ def number_cover(dut):
 async def reset(dut,cycles=1):
 	dut.i_arstn.value = 0
 	dut.i_wr.value = 0
-	dut.i_rd.value = 0
+	dut.i_stb.value = 0
 	dut.i_pol.value = 0
 	dut.i_pha.value = 0
 	dut.i_lsb_first.value = 0
@@ -59,14 +59,14 @@ async def test(dut):
 			data = random.randint(0,2**8-1)
 		expected_value = data
 
-		dut.i_wr.value = 0
-
 		await RisingEdge(dut.i_clk)
+
 		dut.i_data.value = data
 		dut.i_wr.value = 1
+		dut.i_stb.value = 1
 		await RisingEdge(dut.i_clk)
-		await FallingEdge(dut.o_ss_n)
-		await RisingEdge(dut.i_clk)
+		await RisingEdge(dut.o_stall)
+		dut.i_stb.value = 0
 		dut.i_wr.value = 0
 		await RisingEdge(dut.o_rx_ready)
 
@@ -74,6 +74,8 @@ async def test(dut):
 		assert not (expected_value != int(dut.w_data_slave.value)),"Different expected to actual data on Slave RX"
 		coverage_db["top.i_data"].add_threshold_callback(notify, 100)
 		number_cover(dut)
+
+		await FallingEdge(dut.o_stall)
 
 	# coverage_db.report_coverage(cocotb.log.info,bins=True)
 	coverage_db.export_to_xml(filename="coverage.xml")

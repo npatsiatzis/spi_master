@@ -14,6 +14,7 @@ entity sclk_gen is
 			i_tailing_cycles : in std_ulogic_vector(7 downto 0);
 			i_iddling_cycles : in std_ulogic_vector(7 downto 0);
 			i_pol : in std_ulogic;
+			o_stall : out std_ulogic;
 			o_ss_n : out std_ulogic;
 			o_sclk : out std_ulogic);
 end sclk_gen;
@@ -109,6 +110,7 @@ begin
 			w_cnt_delay_start <= '0';
 			w_cnt_falling_edges <= '0';
 			o_ss_n <= '1';				--ss_start is active low
+			o_stall <= '0';
 		elsif (rising_edge(i_clk)) then
 			case w_state is 
 				when IDLE =>
@@ -116,6 +118,7 @@ begin
 						w_state <= LEADING_DELAY;
 						w_cnt_delay_start <= '1';
 						o_ss_n <= '0';
+						o_stall <= '1';
 					end if;
 				--state for the timeframe after ss_n asserts until 1st sck edge
 				--leave leading state when leading time expires
@@ -151,6 +154,7 @@ begin
 			 		if(w_iddling_done = '1') then
 			 			w_state <= IDLE;
 			 			w_cnt_delay_start <= '0';
+			 			o_stall <= '0';
 			 		else
 			 			w_cnt_delay_start <= '1';
 			 		end if;

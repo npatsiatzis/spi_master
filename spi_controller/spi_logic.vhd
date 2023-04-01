@@ -11,11 +11,15 @@ entity spi_logic is
 			i_pol : in std_ulogic;
 			i_pha : in std_ulogic;
 			i_lsb_first : in std_ulogic;
+
+			--wishbone b4(slave) interface
 			i_data : in std_ulogic_vector(15 downto 0);
 			i_wr : in std_ulogic;
-			i_rd : in std_ulogic;
-			i_dv : in std_ulogic;
+			i_stb : in std_ulogic;
+			o_ack : out std_ulogic;
 			o_data : out std_ulogic_vector(15 downto 0);
+
+
 			o_tx_rdy : out std_ulogic;
 			o_rx_rdy : out std_ulogic;
 
@@ -70,7 +74,7 @@ begin
 		if(i_arstn = '0') then
 			w_data_to_tx <= (others => '0');
 		elsif (rising_edge(i_clk)) then
-			if(i_wr = '1') then
+			if(i_stb = '1' and i_wr = '1') then
 			--if(i_wr = '1' and w_tx_rdy = '1') then
 				if(g_data_width = 8) then
 					w_data_to_tx <= i_data(7 downto 0);
@@ -88,8 +92,11 @@ begin
 	begin
 		if(i_arstn = '0') then	
 			w_rx_data <= (others => '0');
+			o_ack <= '0';
 		elsif(rising_edge(i_clk)) then
+			o_ack <= '0';
 			if(w_rx_done = '1' and w_rx_done_r = '0') then
+				o_ack <= '1';
 				if((i_pol = '0' and i_pha = '0') or (i_pol = '1' and i_pha = '1')) then
 					w_rx_data <= w_sr_rx_pos_sclk;
 				else
