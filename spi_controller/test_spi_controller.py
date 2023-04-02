@@ -19,6 +19,7 @@ def test_spi(g_data_width):
     module = "testbench_w_slave"
     toplevel = "spi_top_w_slave"   
     vhdl_sources = [
+        os.path.join(rtl_dir, "intf_registers.vhd"),
         os.path.join(rtl_dir, "sclk_gen.vhd"),
         os.path.join(rtl_dir, "spi_logic.vhd"),
         os.path.join(rtl_dir, "spi_slave.vhd"),

@@ -56,7 +56,6 @@ async def test(dut):
 	
 	
 	expected_value = 0
-	rx_data = 0
 
 	while(full != True):
 		
@@ -65,8 +64,7 @@ async def test(dut):
 			data = random.randint(0,2**8-1)
 		expected_value = data
 
-		await RisingEdge(dut.i_clk)
-
+		dut.i_addr.value = 0 				#write data to txreg
 		dut.i_data.value = data
 		dut.i_wr.value = 1
 		dut.i_stb.value = 1
@@ -74,8 +72,11 @@ async def test(dut):
 		await RisingEdge(dut.o_stall)
 		dut.i_stb.value = 0
 		dut.i_wr.value = 0
-		await RisingEdge(dut.o_rx_ready)
-
+		await RisingEdge(dut.o_rx_ready) 	#rx done interrupt
+		dut.i_addr.value = 1 				#read data from rxreg
+		dut.i_wr.value = 0
+		dut.i_stb.value = 1
+		await RisingEdge(dut.o_ack) 		#wait for ack of transaction
 		assert not (expected_value != int(dut.o_data.value)),"Different expected to actual data on Master RX"
 		coverage_db["top.i_data"].add_threshold_callback(notify, 100)
 		number_cover(dut)
