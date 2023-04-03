@@ -66,6 +66,7 @@ begin
 			i_data =>i_data,
 			o_ack =>o_ack,
 			o_data => o_data,
+			w_stall => o_stall,
 
 			i_spi_rx_data =>w_data,
 			o_txreg => w_txreg,
