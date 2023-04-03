@@ -24,7 +24,7 @@ def number_cover(dut):
 
 async def reset(dut,cycles=1):
 	dut.i_arstn.value = 0
-	dut.i_wr.value = 0
+	dut.i_we.value = 0
 	dut.i_pol.value = 0
 	dut.i_pha.value = 0
 	dut.i_lsb_first.value = 0
@@ -66,15 +66,15 @@ async def test(dut):
 
 		dut.i_addr.value = 0 				#write data to txreg
 		dut.i_data.value = data
-		dut.i_wr.value = 1
+		dut.i_we.value = 1
 		dut.i_stb.value = 1
 		await RisingEdge(dut.i_clk)
 		await RisingEdge(dut.o_stall)
 		dut.i_stb.value = 0
-		dut.i_wr.value = 0
+		dut.i_we.value = 0
 		await RisingEdge(dut.o_rx_ready) 	#rx done interrupt
 		dut.i_addr.value = 1 				#read data from rxreg
-		dut.i_wr.value = 0
+		dut.i_we.value = 0
 		dut.i_stb.value = 1
 		await RisingEdge(dut.o_ack) 		#wait for ack of transaction
 		assert not (expected_value != int(dut.o_data.value)),"Different expected to actual data on Master RX"

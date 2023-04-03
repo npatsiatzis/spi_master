@@ -11,7 +11,7 @@ entity spi_top is
 		i_arstn : in std_ulogic;
 
 		--wishbone b4 (slave) interface
-		i_wr : in std_ulogic;
+		i_we : in std_ulogic;
 		i_stb : in std_ulogic;
 		i_addr : in std_ulogic;
 		i_data : in std_ulogic_vector(15 downto 0);
@@ -41,10 +41,11 @@ end spi_top;
 
 architecture rtl of spi_top is
 	signal w_dv : std_ulogic;
+	signal w_wr : std_ulogic;
 	signal w_sclk : std_ulogic;
 	signal w_ss_n : std_ulogic;
 
-	signal w_data : std_ulogic_vector(15 downto 0);
+	signal w_txreg ,w_data : std_ulogic_vector(15 downto 0);
 begin
 
 	o_sclk <= w_sclk;
@@ -56,13 +57,16 @@ begin
 	port map(
 			i_clk =>i_clk,
 			i_arstn =>i_arstn,
-			i_we =>i_wr,
+			i_we =>i_we,
 			i_stb =>i_stb,
 			i_addr =>i_addr,
 			i_data =>i_data,
-			i_spi_rx_data =>w_data,
 			o_ack =>o_ack,
-			o_data => o_data
+			o_data => o_data,
+
+			i_spi_rx_data =>w_data,
+			o_txreg => w_txreg,
+			o_wr => w_wr
 			);
 
 	sclk_gen : entity work.sclk_gen(rtl)
@@ -90,10 +94,8 @@ begin
 		i_pol =>i_pol,
 		i_pha =>i_pha,
 		i_lsb_first =>i_lsb_first,
-		i_data =>i_data,
-		i_wr =>i_wr,
-		i_stb =>i_stb,
-		--o_ack =>o_ack,
+		i_data =>w_txreg,
+		i_wr =>w_wr,
 		o_data =>w_data,
 
 		o_tx_rdy => o_tx_ready,

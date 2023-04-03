@@ -6,11 +6,12 @@ entity spi_top_w_slave is
 	generic (
 		g_data_width : natural :=8);
 	port (
+		--system clock and reset
 		i_clk : in std_ulogic;
 		i_arstn : in std_ulogic;
 
 		--wishbone b4 (slave) interface
-		i_wr : in std_ulogic;
+		i_we : in std_ulogic;
 		i_stb : in std_ulogic;
 		i_addr : in std_ulogic;
 		i_data : in std_ulogic_vector(15 downto 0);
@@ -42,9 +43,10 @@ architecture rtl of spi_top_w_slave is
 	signal w_sclk : std_ulogic;
 	signal w_ss_n : std_ulogic;
 	signal w_dv : std_ulogic;
+	signal w_wr : std_ulogic;
 	
 	signal w_miso : std_ulogic;
-	signal w_data,w_data_slave : std_ulogic_vector(15 downto 0);
+	signal w_txreg ,w_data,w_data_slave : std_ulogic_vector(15 downto 0);
 	signal w_tx_ready_slave, w_rx_ready_slave : std_ulogic;
 begin
 
@@ -58,14 +60,18 @@ begin
 	port map(
 			i_clk =>i_clk,
 			i_arstn =>i_arstn,
-			i_we =>i_wr,
+			i_we =>i_we,
 			i_stb =>i_stb,
 			i_addr =>i_addr,
 			i_data =>i_data,
-			i_spi_rx_data =>w_data,
 			o_ack =>o_ack,
-			o_data => o_data
+			o_data => o_data,
+
+			i_spi_rx_data =>w_data,
+			o_txreg => w_txreg,
+			o_wr => w_wr
 			);
+
 
 	sclk_gen : entity work.sclk_gen(rtl)
 	generic map(
@@ -93,9 +99,7 @@ begin
 		i_pha =>i_pha,
 		i_lsb_first =>i_lsb_first,
 		i_data =>i_data,
-		i_wr =>i_wr,
-		i_stb =>i_stb,
-		--o_ack => o_ack,
+		i_wr =>w_wr,
 		o_data =>w_data,
 
 		o_tx_rdy => o_tx_ready,
@@ -117,7 +121,7 @@ begin
 		i_pha =>i_pha,
 		i_lsb_first => i_lsb_first,
 		i_data => i_data,
-		i_wr => i_wr,
+		i_wr => w_wr,
 		o_data => w_data_slave,
 		o_tx_rdy =>w_tx_ready_slave,
 		o_rx_rdy =>w_rx_ready_slave,
