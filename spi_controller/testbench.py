@@ -25,13 +25,6 @@ def number_cover(dut):
 async def reset(dut,cycles=1):
 	dut.i_arstn.value = 0
 	dut.i_we.value = 0
-	dut.i_pol.value = 0
-	dut.i_pha.value = 0
-	dut.i_lsb_first.value = 0
-	dut.i_sclk_cycles.value = 20
-	dut.i_leading_cycles.value = 4
-	dut.i_tailing_cycles.value = 4
-	dut.i_iddling_cycles.value = 2
 	dut.i_data.value = 0
 	dut.i_miso .value = 0
 	await ClockCycles(dut.i_clk,cycles)
@@ -56,6 +49,23 @@ async def test(dut):
 	
 	
 	expected_value = 0
+
+	dut.i_addr.value = 2
+	dut.i_stb.value = 1
+	dut.i_we.value = 1
+	dut.i_data.value = 5120   #0x1400
+
+	await RisingEdge(dut.o_ack)
+
+	dut.i_addr.value = 3
+	dut.i_stb.value = 1
+	dut.i_we.value = 1
+	dut.i_data.value = 580
+
+	await RisingEdge(dut.i_clk)
+	dut.i_stb.value = 0
+	dut.i_we.value = 0
+	await FallingEdge(dut.o_ack)
 
 	while(full != True):
 		

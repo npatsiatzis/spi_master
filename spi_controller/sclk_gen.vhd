@@ -10,9 +10,9 @@ entity sclk_gen is
 			i_arstn : in std_ulogic;
 			i_dv : in std_ulogic;		--input bus data valid
 			i_sclk_cycles : in std_ulogic_vector(7 downto 0);
-			i_leading_cycles : in std_ulogic_vector(7 downto 0);
-			i_tailing_cycles : in std_ulogic_vector(7 downto 0);
-			i_iddling_cycles : in std_ulogic_vector(7 downto 0);
+			i_leading_cycles : in std_ulogic_vector(3 downto 0);
+			i_tailing_cycles : in std_ulogic_vector(3 downto 0);
+			i_iddling_cycles : in std_ulogic_vector(3 downto 0);
 			i_pol : in std_ulogic;
 			o_stall : out std_ulogic;
 			o_ss_n : out std_ulogic;
@@ -31,7 +31,7 @@ architecture rtl of sclk_gen is
 	signal w_sclk_start : std_ulogic; 
 	signal w_cnt_delay_start : std_ulogic;
 	signal w_cnt_falling_edges : std_ulogic;
-	signal w_cnt_delay : unsigned(7 downto 0);
+	signal w_cnt_delay : unsigned(3 downto 0);
 	signal w_leading_done : std_ulogic;
 	signal w_tailing_done : std_ulogic;
 	signal w_iddling_done : std_ulogic;
