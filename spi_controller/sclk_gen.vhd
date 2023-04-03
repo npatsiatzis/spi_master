@@ -146,6 +146,7 @@ begin
 						w_sclk_start <= '0';
 						w_cnt_delay_start <= '0';
 						o_ss_n <= '1';
+			 			o_stall <= '0';
 					end if;
 				--state for the timeframe for which ss_n is deasserted (high) after a transaction
 				--until a new transaction can be accepted
@@ -154,7 +155,6 @@ begin
 			 		if(w_iddling_done = '1') then
 			 			w_state <= IDLE;
 			 			w_cnt_delay_start <= '0';
-			 			o_stall <= '0';
 			 		else
 			 			w_cnt_delay_start <= '1';
 			 		end if;

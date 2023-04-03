@@ -42,7 +42,7 @@ begin
 
 	o_sclk <= w_sclk;
 	o_ss_n <= w_ss_n;
-	w_dv <= '1' when((i_stb = '1' and i_we = '1' and i_addr = "00") or (i_stb = '1' and i_we = '0' and i_addr = "01")) else '0';
+	w_dv <= '1' when((i_stb = '1' and i_we = '1' and i_addr = "00")) else '0';
 
 
 	intf_registers : entity work.intf_registers(rtl)

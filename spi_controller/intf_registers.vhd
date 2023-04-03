@@ -13,6 +13,7 @@ entity intf_registers is
 			o_ack : out std_ulogic;
 			o_data : out std_ulogic_vector(15 downto 0);
 			w_stall : in std_ulogic;
+			
 			i_spi_rx_data : in std_ulogic_vector(15 downto 0);
 			o_txreg : out std_ulogic_vector(15 downto 0);
 			o_config_reg : out std_ulogic_vector(31 downto 0);
@@ -24,6 +25,15 @@ architecture rtl of intf_registers is
 	signal w_tx_reg : std_ulogic_vector(15 downto 0);
 	signal w_rx_reg : std_ulogic_vector(15 downto 0);
 	signal w_config_reg : std_ulogic_vector(31 downto 0);
+
+	-- 					REGISTER MAP
+
+	-- 			Address 		| 		Functionality
+	--			   0 			|	tx_reg (data to tx)
+	--			   1 			|	rx_reg (data read)
+	--			   2 			|	(15 downto 8) -> scl_cycles, (7 downto 3) -> X, 2->lsb_first, 1->pha, 0->pol
+	--			   3 			|	(31 downto 28) -> X, (27 downto 24) -> idling, (23 downto 20) -> tailing, (19 donwto 16) -> leading
+
 
 begin
 	manage_regs : process(i_clk,i_arstn) is

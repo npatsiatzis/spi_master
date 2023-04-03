@@ -34,6 +34,15 @@ async def reset(dut,cycles=1):
 	await RisingEdge(dut.i_clk)
 	dut._log.info("the core was reset")
 
+	# 					REGISTER MAP
+
+	# 			Address 		| 		Functionality
+	#			   0 			|	tx_reg (data to tx)
+	#			   1 			|	rx_reg (data read)
+	#			   2 			|	(15 downto 8) -> scl_cycles, (7 downto 3) -> X, 2->lsb_first, 1->pha, 0->pol
+	#			   3 			|	(31 downto 28) -> X, (27 downto 24) -> idling, (23 downto 20) -> tailing, (19 donwto 16) -> leading
+
+
 @cocotb.test()
 async def test(dut):
 	"""Check results and coverage for spi controller"""
@@ -55,7 +64,7 @@ async def test(dut):
 	dut.i_addr.value = 3
 	dut.i_stb.value = 1
 	dut.i_we.value = 1
-	dut.i_data.value = 580
+	dut.i_data.value = 1
 
 	await RisingEdge(dut.i_clk)
 	dut.i_stb.value = 0

@@ -36,15 +36,15 @@ class crv_inputs(crv.Randomized):
 # Sequence classes
 class SeqItem(uvm_sequence_item):
 
-    def __init__(self, name, i_wr,i_rd,i_tx_data):
+    def __init__(self, name,i_tx_data):
         super().__init__(name)
-        self.i_wr = i_wr
-        self.i_rd = i_rd
+        # self.i_wr = i_wr
+        # self.i_rd = i_rd
         self.i_crv = crv_inputs(i_tx_data)
 
     def randomize_operands(self):
-        self.i_wr = 1
-        self.i_rd = 0
+        # self.i_wr = 1
+        # self.i_rd = 0
         self.i_crv.randomize()
 
     def randomize(self):
@@ -55,7 +55,7 @@ class RandomSeq(uvm_sequence):
 
     async def body(self):
         while(len(covered_values) != 2**8):
-            data_tr = SeqItem("data_tr", None,None,None)
+            data_tr = SeqItem("data_tr", None)
             await self.start_item(data_tr)
             data_tr.randomize_operands()
             while(data_tr.i_crv.tx_data in covered_values):
@@ -84,15 +84,27 @@ class Driver(uvm_driver):
 
     async def run_phase(self):
         await self.launch_tb()
+
+        await self.bfm.send_data((1,1,2,5120))
+        await self.bfm.send_data((1,1,3,1))
+        await self.bfm.send_data((0,0,0,0))
+        await FallingEdge(self.bfm.dut.o_ack)
+
         while True:
             data = await self.seq_item_port.get_next_item()
-            await self.bfm.send_data((data.i_wr,data.i_rd,data.i_crv.tx_data))
-            # await RisingEdge(self.bfm.dut.o_tx_ready)
-            # await self.bfm.send_data((0,0))
+            await self.bfm.send_data((1,1,0,data.i_crv.tx_data))
+            await RisingEdge(self.bfm.dut.o_stall)
+            await self.bfm.send_data((0,0,0,data.i_crv.tx_data))
+
+            await RisingEdge(self.bfm.dut.o_rx_ready)    #rx done interrupt
+            await self.bfm.send_data((0,1,1,data.i_crv.tx_data))
+
             result = await self.bfm.get_result()
             self.ap.write(result)
             data.result = result
             self.seq_item_port.item_done()
+            await FallingEdge(self.bfm.dut.o_stall)
+
 
 
 class Coverage(uvm_subscriber):
@@ -101,7 +113,7 @@ class Coverage(uvm_subscriber):
         self.cvg = set()
 
     def write(self, data):
-        (i_wr,i_rd,i_tx_data) = data
+        (i_we,i_stb,i_addr,i_tx_data) = data
         number_cover(i_tx_data)
         if(int(i_tx_data) not in self.cvg):
             self.cvg.add(int(i_tx_data))
@@ -148,7 +160,7 @@ class Scoreboard(uvm_component):
             if not data_success:
                 self.logger.critical(f"result {actual_result} had no command")
             else:
-                (i_wr,i_rd,i_tx_data) = data
+                (i_we,i_stb,i_addr,i_tx_data) = data
                 if int(i_tx_data) == int(actual_result):
                     self.logger.info("PASSED")
                     print("i_tx_data is {}, rx_data is {}".format(int(i_tx_data),int(actual_result)))

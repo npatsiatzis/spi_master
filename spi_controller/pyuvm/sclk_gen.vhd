@@ -10,10 +10,11 @@ entity sclk_gen is
 			i_arstn : in std_ulogic;
 			i_dv : in std_ulogic;		--input bus data valid
 			i_sclk_cycles : in std_ulogic_vector(7 downto 0);
-			i_leading_cycles : in std_ulogic_vector(7 downto 0);
-			i_tailing_cycles : in std_ulogic_vector(7 downto 0);
-			i_iddling_cycles : in std_ulogic_vector(7 downto 0);
+			i_leading_cycles : in std_ulogic_vector(3 downto 0);
+			i_tailing_cycles : in std_ulogic_vector(3 downto 0);
+			i_iddling_cycles : in std_ulogic_vector(3 downto 0);
 			i_pol : in std_ulogic;
+			o_stall : out std_ulogic;
 			o_ss_n : out std_ulogic;
 			o_sclk : out std_ulogic);
 end sclk_gen;
@@ -30,7 +31,7 @@ architecture rtl of sclk_gen is
 	signal w_sclk_start : std_ulogic; 
 	signal w_cnt_delay_start : std_ulogic;
 	signal w_cnt_falling_edges : std_ulogic;
-	signal w_cnt_delay : unsigned(7 downto 0);
+	signal w_cnt_delay : unsigned(3 downto 0);
 	signal w_leading_done : std_ulogic;
 	signal w_tailing_done : std_ulogic;
 	signal w_iddling_done : std_ulogic;
@@ -109,6 +110,7 @@ begin
 			w_cnt_delay_start <= '0';
 			w_cnt_falling_edges <= '0';
 			o_ss_n <= '1';				--ss_start is active low
+			o_stall <= '0';
 		elsif (rising_edge(i_clk)) then
 			case w_state is 
 				when IDLE =>
@@ -116,6 +118,7 @@ begin
 						w_state <= LEADING_DELAY;
 						w_cnt_delay_start <= '1';
 						o_ss_n <= '0';
+						o_stall <= '1';
 					end if;
 				--state for the timeframe after ss_n asserts until 1st sck edge
 				--leave leading state when leading time expires
@@ -143,6 +146,7 @@ begin
 						w_sclk_start <= '0';
 						w_cnt_delay_start <= '0';
 						o_ss_n <= '1';
+			 			o_stall <= '0';
 					end if;
 				--state for the timeframe for which ss_n is deasserted (high) after a transaction
 				--until a new transaction can be accepted

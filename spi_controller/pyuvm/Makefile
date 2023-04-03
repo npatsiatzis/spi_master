@@ -6,6 +6,7 @@ TOPLEVEL_LANG ?= vhdl
 EXTRA_ARGS += --std=08
 SIM_ARGS += --wave=wave.ghw
 
+VHDL_SOURCES += $(PWD)/intf_registers.vhd
 VHDL_SOURCES += $(PWD)/spi_slave.vhd
 VHDL_SOURCES += $(PWD)/spi_logic.vhd
 VHDL_SOURCES += $(PWD)/sclk_gen.vhd

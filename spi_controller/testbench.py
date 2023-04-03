@@ -38,6 +38,15 @@ async def connect_mosi_miso(dut):
 		dut.i_miso.value = dut.o_mosi.value 		#loopback
 
 
+	# 					REGISTER MAP
+
+	# 			Address 		| 		Functionality
+	#			   0 			|	tx_reg (data to tx)
+	#			   1 			|	rx_reg (data read)
+	#			   2 			|	(15 downto 8) -> scl_cycles, (7 downto 3) -> X, 2->lsb_first, 1->pha, 0->pol
+	#			   3 			|	(31 downto 28) -> X, (27 downto 24) -> idling, (23 downto 20) -> tailing, (19 donwto 16) -> leading
+
+
 @cocotb.test()
 async def test(dut):
 	"""Check results and coverage for spi controller"""
@@ -46,7 +55,6 @@ async def test(dut):
 	await reset(dut,5)	
 	cocotb.start_soon(connect_mosi_miso(dut))
 
-	
 	
 	expected_value = 0
 
