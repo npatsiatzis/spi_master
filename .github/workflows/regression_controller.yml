@@ -40,4 +40,4 @@ jobs:
       
     - name: Functional Coverage
       run: |
-        cd spi_controller/ && SIM=ghdl pytest -n auto -o log_cli=True --junitxml=test-results.xml --cocotbxml=test-cocotb.xml test_spi_controller.py
+        cd cocotb_sim/ && SIM=ghdl pytest -n auto -o log_cli=True --junitxml=test-results.xml --cocotbxml=test-cocotb.xml test_spi_controller.py
