@@ -16,12 +16,13 @@ rtl_dir = tests_dir                                    #path to hdl folder where
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
 def test_spi(g_data_width):
 
-    module = "testbench_pyuvm"
+    module = "tb_pyuvm"
     toplevel = "spi_top"   
     vhdl_sources = [
-        os.path.join(rtl_dir, "sclk_gen.vhd"),
-        os.path.join(rtl_dir, "spi_logic.vhd"),
-        os.path.join(rtl_dir, "spi_top.vhd"),
+        os.path.join(rtl_dir, "../rtl/intf_registers.vhd"),
+        os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_top.vhd"),
         ]
 
     parameter = {}

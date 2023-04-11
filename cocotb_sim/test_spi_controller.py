@@ -13,19 +13,22 @@ rtl_dir = tests_dir                                    #path to hdl folder where
 
       
 #run tests with generic values for length
-@pytest.mark.parametrize("g_width", [str(i) for i in range(4,9,4)])
-@pytest.mark.parametrize("g_sys_clk", [str(4*10**7),str(5*10**7)])
-def test_uart(g_width,g_sys_clk):
+@pytest.mark.parametrize("g_data_width", [str(8),str(16)])
+def test_spi(g_data_width):
 
-    module = "testbench_spi_master"
-    toplevel = "spi_master"   
+    module = "testbench_w_slave"
+    toplevel = "spi_top_w_slave"   
     vhdl_sources = [
-        os.path.join(rtl_dir, "spi_master.vhd"),
+        os.path.join(rtl_dir, "../rtl/intf_registers.vhd"),
+        os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_slave.vhd"),
+        os.path.join(rtl_dir, "../rtl/synchronous_fifo.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_top_w_slave.vhd"),
         ]
 
     parameter = {}
-    parameter['g_width'] = g_width
-    parameter['g_sys_clk'] = g_sys_clk
+    parameter['g_data_width'] = g_data_width
 
 
     run(
