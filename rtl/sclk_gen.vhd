@@ -146,13 +146,13 @@ begin
 						w_sclk_start <= '0';
 						w_cnt_delay_start <= '0';
 						o_ss_n <= '1';
-			 			o_stall <= '0';
 					end if;
 				--state for the timeframe for which ss_n is deasserted (high) after a transaction
 				--until a new transaction can be accepted
 				--leave this state when iddling time expires
 			 	when IDDLING_DELAY =>
 			 		if(w_iddling_done = '1') then
+			 			o_stall <= '0';
 			 			w_state <= IDLE;
 			 			w_cnt_delay_start <= '0';
 			 		else
