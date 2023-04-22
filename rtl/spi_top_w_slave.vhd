@@ -92,7 +92,7 @@ begin
 		i_pol =>w_config_reg(0),
 		i_pha =>w_config_reg(1),
 		i_lsb_first => w_config_reg(2),
-		i_data =>i_data,
+		i_data =>w_txreg,
 		i_wr =>w_wr,
 		o_data =>w_data,
 
@@ -114,7 +114,7 @@ begin
 		i_pol =>w_config_reg(0),
 		i_pha =>w_config_reg(1),
 		i_lsb_first => w_config_reg(2),
-		i_data => i_data,
+		i_data => w_txreg,
 		i_wr => w_wr,
 		o_data => w_data_slave,
 		o_tx_rdy =>w_tx_ready_slave,
