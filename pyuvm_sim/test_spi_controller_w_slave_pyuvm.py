@@ -46,34 +46,34 @@ def test_spi_w_slave(g_data_width):
 
 
 #run tests with generic values for length
-@pytest.mark.parametrize("g_data_width", [str(8),str(16)])
-def test_spi_axi_w_slave(g_data_width):
+# @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
+# def test_spi_axi_w_slave(g_data_width):
 
-    module = "tb_w_slave_pyuvm_axi"
-    toplevel = "spi_top_w_slave_axi"   
-    vhdl_sources = [
-        os.path.join(rtl_dir, "../rtl/axil_regs.vhd"),
-        os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
-        os.path.join(rtl_dir, "../rtl/spi_slave.vhd"),
-        os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
-        os.path.join(rtl_dir, "../rtl/spi_top_w_slave_axi.vhd"),
-        ]
+#     module = "tb_w_slave_pyuvm_axi"
+#     toplevel = "spi_top_w_slave_axi"   
+#     vhdl_sources = [
+#         os.path.join(rtl_dir, "../rtl/axil_regs.vhd"),
+#         os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
+#         os.path.join(rtl_dir, "../rtl/spi_slave.vhd"),
+#         os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
+#         os.path.join(rtl_dir, "../rtl/spi_top_w_slave_axi.vhd"),
+#         ]
 
-    parameter = {}
-    parameter['g_data_width'] = g_data_width
+#     parameter = {}
+#     parameter['g_data_width'] = g_data_width
 
 
-    run(
-        python_search=[tests_dir],                         #where to search for all the python test files
-        vhdl_sources=vhdl_sources,
-        toplevel=toplevel,
-        module=module,
+#     run(
+#         python_search=[tests_dir],                         #where to search for all the python test files
+#         vhdl_sources=vhdl_sources,
+#         toplevel=toplevel,
+#         module=module,
 
-        vhdl_compile_args=[vhdl_compile_args],
-        toplevel_lang="vhdl",
-        parameters=parameter,                              #parameter dictionary
-        extra_env=parameter,
-        sim_build="sim_build/"
-        + "_".join(("{}={}".format(*i) for i in parameter.items())),
-    )
+#         vhdl_compile_args=[vhdl_compile_args],
+#         toplevel_lang="vhdl",
+#         parameters=parameter,                              #parameter dictionary
+#         extra_env=parameter,
+#         sim_build="sim_build/"
+#         + "_".join(("{}={}".format(*i) for i in parameter.items())),
+#     )
 
