@@ -49,8 +49,8 @@ def test_spi(g_data_width):
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
 def test_spi_axi(g_data_width):
 
-    module = "tb_w_slave_pyuvm"
-    toplevel = "spi_top_w_slave"   
+    module = "tb_w_slave_pyuvm_axi"
+    toplevel = "spi_top_w_slave_axi"   
     vhdl_sources = [
         os.path.join(rtl_dir, "../rtl/axil_regs.vhd"),
         os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),

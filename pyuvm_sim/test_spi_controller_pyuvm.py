@@ -14,7 +14,7 @@ rtl_dir = tests_dir                                    #path to hdl folder where
       
 #run tests with generic values for length
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
-def test_spi(g_data_width):
+def test_spi_lb(g_data_width):
 
     module = "tb_pyuvm"
     toplevel = "spi_top"   
@@ -23,6 +23,38 @@ def test_spi(g_data_width):
         os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
         os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
         os.path.join(rtl_dir, "../rtl/spi_top.vhd"),
+        ]
+
+    parameter = {}
+    parameter['g_data_width'] = g_data_width
+
+
+    run(
+        python_search=[tests_dir],                         #where to search for all the python test files
+        vhdl_sources=vhdl_sources,
+        toplevel=toplevel,
+        module=module,
+
+        vhdl_compile_args=[vhdl_compile_args],
+        toplevel_lang="vhdl",
+        parameters=parameter,                              #parameter dictionary
+        extra_env=parameter,
+        sim_build="sim_build/"
+        + "_".join(("{}={}".format(*i) for i in parameter.items())),
+    )
+
+
+#run tests with generic values for length
+@pytest.mark.parametrize("g_data_width", [str(8),str(16)])
+def test_spi_lb_axi(g_data_width):
+
+    module = "tb_pyuvm_axi"
+    toplevel = "spi_top_axi"   
+    vhdl_sources = [
+        os.path.join(rtl_dir, "../rtl/axil_regs.vhd"),
+        os.path.join(rtl_dir, "../rtl/sclk_gen.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_logic.vhd"),
+        os.path.join(rtl_dir, "../rtl/spi_top_axi.vhd"),
         ]
 
     parameter = {}
