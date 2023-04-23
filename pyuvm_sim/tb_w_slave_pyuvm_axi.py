@@ -5,7 +5,7 @@ from pyuvm import *
 import random
 import cocotb
 import pyuvm
-from utils import SpiBfm
+from utils import AxilSpiBfm_w_Slave
 from cocotb_coverage.coverage import CoverPoint,coverage_db
 
 # g_sys_clk = int(cocotb.top.g_sys_clk)
@@ -38,13 +38,9 @@ class SeqItem(uvm_sequence_item):
 
     def __init__(self, name,i_tx_data):
         super().__init__(name)
-        # self.i_wr = i_wr
-        # self.i_rd = i_rd
         self.i_crv = crv_inputs(i_tx_data)
 
     def randomize_operands(self):
-        # self.i_wr = 1
-        # self.i_rd = 0
         self.i_crv.randomize()
 
     def randomize(self):
@@ -76,7 +72,7 @@ class Driver(uvm_driver):
         self.ap = uvm_analysis_port("ap", self)
 
     def start_of_simulation_phase(self):
-        self.bfm = SpiBfm()
+        self.bfm = AxilSpiBfm_w_Slave()
 
     async def launch_tb(self):
         await self.bfm.reset()
@@ -84,27 +80,32 @@ class Driver(uvm_driver):
 
     async def run_phase(self):
         await self.launch_tb()
+        await self.bfm.send_data((1,2,1,5120,1,0,0,0))
+        await RisingEdge(self.bfm.dut.S_AXI_BVALID)
+        await self.bfm.send_data((0,2,0,5120,1,0,0,0))
+        await RisingEdge(self.bfm.dut.S_AXI_ACLK)
 
-        await self.bfm.send_data((1,1,2,5120))
-        await self.bfm.send_data((1,1,3,580))
-        await self.bfm.send_data((0,0,0,0))
-        await FallingEdge(self.bfm.dut.o_ack)
-
+        await self.bfm.send_data((1,3,1,1,1,0,0,0))
+        await RisingEdge(self.bfm.dut.S_AXI_BVALID)
+        await self.bfm.send_data((0,3,0,1,1,0,0,0))
+        await RisingEdge(self.bfm.dut.S_AXI_ACLK)
         while True:
             data = await self.seq_item_port.get_next_item()
-            await self.bfm.send_data((1,1,0,data.i_crv.tx_data))
-            await RisingEdge(self.bfm.dut.o_stall)
-            await self.bfm.send_data((0,0,0,data.i_crv.tx_data))
+            await self.bfm.send_data((1,0,1,data.i_crv.tx_data,1,0,0,0))
+            await RisingEdge(self.bfm.dut.S_AXI_BVALID)
+            await self.bfm.send_data((0,0,0,data.i_crv.tx_data,1,0,0,0))
 
-            await RisingEdge(self.bfm.dut.o_rx_ready)    #rx done interrupt
-            await self.bfm.send_data((0,1,1,data.i_crv.tx_data))
+            await RisingEdge(self.bfm.dut.o_rx_ready)
+            await self.bfm.send_data((0,0,0,0,1,1,1,1))
+            await FallingEdge(self.bfm.dut.S_AXI_RVALID)
+            await self.bfm.send_data((0,0,0,0,1,0,1,1))
 
             result = await self.bfm.get_result()
             self.ap.write(result)
             data.result = result
             self.seq_item_port.item_done()
-            await FallingEdge(self.bfm.dut.o_stall)
 
+            await FallingEdge(self.bfm.dut.o_stall)
 
 
 class Coverage(uvm_subscriber):
@@ -113,10 +114,10 @@ class Coverage(uvm_subscriber):
         self.cvg = set()
 
     def write(self, data):
-        (i_we,i_stb,i_addr,i_tx_data) = data
-        number_cover(i_tx_data)
-        if(int(i_tx_data) not in self.cvg):
-            self.cvg.add(int(i_tx_data))
+        # (i_we,i_stb,i_addr,i_tx_data) = data
+        number_cover(data)
+        if(int(data) not in self.cvg):
+            self.cvg.add(int(data))
 
     def report_phase(self):
         try:
@@ -160,13 +161,13 @@ class Scoreboard(uvm_component):
             if not data_success:
                 self.logger.critical(f"result {actual_result} had no command")
             else:
-                (i_we,i_stb,i_addr,i_tx_data) = data
-                if int(i_tx_data) == int(actual_result):
+                # (i_we,i_stb,i_addr,i_tx_data) = data
+                if int(data) == int(actual_result):
                     self.logger.info("PASSED")
-                    print("i_tx_data is {}, rx_data is {}".format(int(i_tx_data),int(actual_result)))
+                    print("i_tx_data is {}, rx_data is {}".format(int(data),int(actual_result)))
                 else:
                     self.logger.error("FAILED")
-                    print("i_tx_data is {}, rx_data is {}".format(int(i_tx_data),int(actual_result)))
+                    print("i_tx_data is {}, rx_data is {}".format(int(data),int(actual_result)))
                     passed = False
         assert passed
 
@@ -178,7 +179,7 @@ class Monitor(uvm_component):
 
     def build_phase(self):
         self.ap = uvm_analysis_port("ap", self)
-        self.bfm = SpiBfm()
+        self.bfm = AxilSpiBfm_w_Slave()
         self.get_method = getattr(self.bfm, self.method_name)
 
     async def run_phase(self):
@@ -211,14 +212,14 @@ class Test(uvm_test):
 
     def build_phase(self):
         self.env = Env("env", self)
-        self.bfm = SpiBfm()
+        self.bfm = AxilSpiBfm_w_Slave()
 
     def end_of_elaboration_phase(self):
         self.test_all = TestAllSeq.create("test_all")
 
     async def run_phase(self):
         self.raise_objection()
-        cocotb.start_soon(Clock(self.bfm.dut.i_clk, 10, units="ns").start())
+        cocotb.start_soon(Clock(self.bfm.dut.S_AXI_ACLK, 10, units="ns").start())
         await self.test_all.start()
 
         coverage_db.report_coverage(cocotb.log.info,bins=True)

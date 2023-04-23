@@ -132,7 +132,7 @@ begin
 	--			   2 			|	(15 downto 8) -> scl_cycles, (7 downto 3) -> X, 2->lsb_first, 1->pha, 0->pol
 	--			   3 			|	(31 downto 28) -> X, (27 downto 24) -> idling, (23 downto 20) -> tailing, (19 donwto 16) -> leading
 
-	f_is_data_to_tx <= '1' when (S_AXI_WVALID = '1' and S_AXI_AWVALID = '1' and unsigned(axil_waddr) = 0) else '0';
+	f_is_data_to_tx <= '1' when (S_AXI_WVALID = '1' and S_AXI_AWVALID = '1' and unsigned(S_AXI_AWADDR) = 0) else '0';
 
 	manage_write_regs : process(i_clk,i_arst) is
 		variable loc_addr : std_ulogic_vector(1 downto 0);
