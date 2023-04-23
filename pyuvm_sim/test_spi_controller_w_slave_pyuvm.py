@@ -14,7 +14,7 @@ rtl_dir = tests_dir                                    #path to hdl folder where
       
 #run tests with generic values for length
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
-def test_spi(g_data_width):
+def test_spi_w_slave(g_data_width):
 
     module = "tb_w_slave_pyuvm"
     toplevel = "spi_top_w_slave"   
@@ -47,7 +47,7 @@ def test_spi(g_data_width):
 
 #run tests with generic values for length
 @pytest.mark.parametrize("g_data_width", [str(8),str(16)])
-def test_spi_axi(g_data_width):
+def test_spi_axi_w_slave(g_data_width):
 
     module = "tb_w_slave_pyuvm_axi"
     toplevel = "spi_top_w_slave_axi"   
