@@ -24,5 +24,12 @@ test_w_slave:
 test:
 		rm -rf sim_build
 		$(MAKE) sim MODULE=testbench TOPLEVEL=spi_top	
+
+clean_dir:
+		rm -f wave.*
+		rm -f *.o 
+		rm -f *.xml
+		find . -maxdepth 1 -type f -executable -exec rm {} +
+		find -mindepth 1 -maxdepth 1 -type d -print0 | xargs -r0 rm -R
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
